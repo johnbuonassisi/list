@@ -102,8 +102,8 @@ func checkListPointers(t *testing.T, l *List, nodes []*Node) {
 	// on the nodes provided
 	root := &l.root
 	for i, n := range nodes {
-		expPrev := root
-		ExpPrev := (*Node)(nil)
+		expPrev := root         // for checking the internal previous which will be the root for the first node
+		ExpPrev := (*Node)(nil) // for checking the external previous which will be nil for the first node
 		if i > 0 {
 			expPrev = nodes[i-1]
 			ExpPrev = expPrev
@@ -115,8 +115,8 @@ func checkListPointers(t *testing.T, l *List, nodes []*Node) {
 			t.Errorf("For node %d, the previous was expected to be %p, but was %p", i, expPrev, n.prev)
 		}
 
-		expNext := root
-		ExpNext := (*Node)(nil)
+		expNext := root         // for checking the internal previous which will be the root for the last node
+		ExpNext := (*Node)(nil) // for checking the external previous which will be nil for the last node
 		if i < len(nodes)-1 {
 			expNext = nodes[i+1]
 			ExpNext = expNext
