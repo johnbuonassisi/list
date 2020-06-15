@@ -4,189 +4,145 @@ import (
 	"testing"
 )
 
+func TestInit(t *testing.T) {
+	l := New()
+	checkListPointers(t, l, []*Node{})
+	if l.Head() != nil {
+		t.Errorf("Head of empty list should be nil but was not")
+	}
+	if l.Tail() != nil {
+		t.Errorf("Tail of empty list should be nil but was not")
+	}
+}
+
+func TestLazyInit(t *testing.T) {
+	l := List{}
+	checkListPointers(t, &l, []*Node{})
+	l.lazyInit()
+	checkListPointers(t, &l, []*Node{})
+}
+
 func TestAdd(t *testing.T) {
-	list := List{}
-	list.Add("John")
-	head := list.Head()
-	if head == nil {
-		t.Fatal("the head element was nil")
-	}
-	tail := list.Tail()
-	if tail == nil {
-		t.Fatal("the tail element was nil")
-	}
-	if tail != head {
-		t.Fatalf("the head and tail elements are not the same: %v, %v", head, tail)
-	}
-	if head.element != "John" {
-		t.Fatalf("the head element is not John: %v", head)
-	}
-	list.Add("Ashling")
-	head = list.Head()
-	tail = list.Tail()
-	if head.element != "John" {
-		t.Fatalf("the head element is not John: %v", head)
-	}
-	if tail.element != "Ashling" {
-		t.Fatalf("the tail element is not Ashling: %v", head)
-	}
-	t.Logf("ran test %s", "John")
-}
-
-func TestIterate(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn")
-	i := 0
-	for node := list.Head(); node != nil; node = node.Next() {
-		if i == 0 && node.Element() != "John" {
-			t.Fatalf("element number, %d, should be John", i)
-		} else if i == 1 && node.Element() != "Ashling" {
-			t.Fatalf("element number, %d, should be Ashling", i)
-		} else if i == 2 && node.Element() != "Finn" {
-			t.Fatalf("element number, %d, should be Finn", i)
-		}
-		i = i + 1
-	}
-}
-
-func TestRevIterate(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn")
-	i := 2
-	for node := list.Tail(); node != nil; node = node.Prev() {
-		if i == 0 && node.Element() != "John" {
-			t.Fatalf("element number, %d, should be John", i)
-		} else if i == 1 && node.Element() != "Ashling" {
-			t.Fatalf("element number, %d, should be Ashling", i)
-		} else if i == 2 && node.Element() != "Finn" {
-			t.Fatalf("element number, %d, should be Finn", i)
-		}
-		i = i - 1
-	}
-}
-
-func TestIterateAfterInsert(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn")
-	list.Insert("Daniella", 0)
-	list.Insert("Anthony", 4)
-	list.Insert("Peter", 2)
-	// result is Daniella, John, Peter, Ashling, Finn, Anthony
-	result := map[int]string{0: "Daniella", 1: "John", 2: "Peter", 3: "Ashling", 4: "Finn", 5: "Anthony"}
-	var i int
-	for node := list.Head(); node != nil; node = node.Next() {
-		if result[i] != node.Element() {
-			t.Fatalf("Expected node %d to contain %s, but was %s", i, result[i], node.Element())
-		}
-		i++
-	}
-
-}
-
-func TestRevIterateAfterInsert(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn")
-	list.Insert("Daniella", 0)
-	list.Insert("Anthony", 4)
-	list.Insert("Peter", 2)
-	// result is Daniella, John, Peter, Ashling, Finn, Anthony
-	result := map[int]string{0: "Daniella", 1: "John", 2: "Peter", 3: "Ashling", 4: "Finn", 5: "Anthony"}
-	var i int
-	for node := list.Tail(); node != nil; node = node.Prev() {
-		if result[5-i] != node.Element() {
-			t.Fatalf("Expected node %d to contain %s, but was %s", i, result[i], node.Element())
-		}
-		i++
-	}
-
-}
-
-func TestInsertFront(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn")
-	err := list.Insert("Anthony", 0)
-	if err != nil {
-		t.Fatal("Insertion failed")
-	}
-
-	if list.Head().Element() != "Anthony" {
-		t.Fatal("Anthony was not inserted as the first node")
-	}
-
-}
-
-func TestInsertFirst(t *testing.T) {
-
-	list := NewWithElements("John", "Ashling", "Finn")
-
-	err := list.Insert("Anthony", 1)
-	if err != nil {
-		t.Fatal("Insertion failed")
-	}
-
-	if list.Head().Next().Element() != "Anthony" {
-		t.Fatal("Anthony was not inserted as the second node")
-	}
-
-}
-
-func TestInsertLast(t *testing.T) {
-
-	list := NewWithElements("John", "Ashling", "Finn")
-
-	err := list.Insert("Anthony", 3)
-	if err != nil {
-		t.Fatal("Unable to add Anthony to the end of the list")
-	}
-	if list.Head().Next().Next().Next().Element() != "Anthony" {
-		t.Fatal("Anthony was not added to the end of the list")
-	}
-	if list.Tail().Element() != "Anthony" {
-		t.Fatal("The tail node was not updated properly")
-	}
-}
-
-func TestInsertPastLast(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn")
-
-	err := list.Insert("Anthony", 100)
-	if err == nil {
-		t.Fatal("Should not be able to insert well past the end of the list")
-	}
-
+	l := New()
+	n1 := l.AddToBack("John")
+	checkListPointers(t, l, []*Node{n1})
+	n2 := l.AddToBack("Ashling")
+	checkListPointers(t, l, []*Node{n1, n2})
+	n3 := l.AddToFront("Finn")
+	checkListPointers(t, l, []*Node{n3, n1, n2})
+	n4 := l.AddBefore("Anthony", n2)
+	checkListPointers(t, l, []*Node{n3, n1, n4, n2})
+	n5 := l.AddAfter("Daniella", n1)
+	checkListPointers(t, l, []*Node{n3, n1, n5, n4, n2})
 }
 
 func TestDelete(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn", "Anthony")
-	err := list.Delete(0)
-	if err != nil {
-		t.Fatal("Failed to delete")
+	l := New()
+	n1 := l.AddToBack("John")
+	n2 := l.AddToBack("Ashling")
+	n3 := l.AddToBack("Finn")
+	data := l.Delete(n3)
+	if d := data.(string); d != "Finn" {
+		t.Errorf("Expected Finn but got %s", d)
 	}
-	if list.Head().Element() != "Ashling" {
-		t.Fatal("John was not deleted from the beginning of the list")
+	checkListPointers(t, l, []*Node{n1, n2})
+}
+
+func TestIteration(t *testing.T) {
+	l := New()
+	l.AddToBack(1)
+	l.AddToBack(1)
+	l.AddToBack(1)
+
+	// test forward iteration
+	var i int
+	var sum int
+	for n := l.Head(); n != nil; n = n.Next() {
+		if v, ok := n.Data.(int); ok {
+			sum += v
+		}
+		i++
+		if i > 3 {
+			t.Errorf("iteration should end after 3 nodes")
+			return
+		}
 	}
 
-	err = list.Delete(1)
-	if err != nil {
-		t.Fatal("Failed to delete")
-	}
-	if list.Head().Next().Element() != "Anthony" {
-		t.Fatal("Finn was not deleted from the second position in the list")
+	if sum != 3 {
+		t.Errorf("sum over 3 values should equal 3, but was %d", sum)
 	}
 
-	err = list.Delete(1)
-	if err != nil {
-		t.Fatal("Failed to delete")
+	// test reverse iteration
+	sum = 0
+	i = 0
+	for n := l.Tail(); n != nil; n = n.Prev() {
+		if v, ok := n.Data.(int); ok {
+			sum += v
+		}
+		i++
+		if i > 3 {
+			t.Errorf("iteration should end after 3 nodes")
+			return
+		}
 	}
-	if list.Head().Element() != "Ashling" && list.Tail().Element() != "Ashling" {
-		t.Fatal("Anthony was not deleted from the end of the list")
+
+	if sum != 3 {
+		t.Errorf("sum over 3 values should equal 3, but was %d", sum)
 	}
-	err = list.Delete(100)
-	if err == nil {
-		t.Fatal("Should not be able to delete from well past the end of the list")
+}
+
+func checkListPointers(t *testing.T, l *List, nodes []*Node) {
+
+	// check that the size of the list is correct
+	if !checkListSize(t, l, nodes) {
+		return
+	}
+
+	// check that the list contains the right pointers based
+	// on the nodes provided
+	root := &l.root
+	for i, n := range nodes {
+		expPrev := root
+		ExpPrev := (*Node)(nil)
+		if i > 0 {
+			expPrev = nodes[i-1]
+			ExpPrev = expPrev
+		}
+		if expPrev != n.prev {
+			t.Errorf("For node %d, the previous was expected to be %p, but was %p", i, expPrev, n.prev)
+		}
+		if ExpPrev != n.Prev() {
+			t.Errorf("For node %d, the previous was expected to be %p, but was %p", i, expPrev, n.prev)
+		}
+
+		expNext := root
+		ExpNext := (*Node)(nil)
+		if i < len(nodes)-1 {
+			expNext = nodes[i+1]
+			ExpNext = expNext
+		}
+		if expNext != n.next {
+			t.Errorf("For node %d, the next was expected to be %p, but was %p", i, expNext, n.next)
+		}
+		if ExpNext != n.Next() {
+			t.Errorf("For node %d, the next was expected to be %p, but was %p", i, expNext, n.next)
+		}
+
 	}
 
 }
 
-func TestSize(t *testing.T) {
-	list := NewWithElements("John", "Ashling", "Finn")
-	size := list.Size()
-	if size != 3 {
-		t.Fatal("Size of list should be 3")
+func checkListSize(t *testing.T, l *List, nodes []*Node) bool {
+	if l.Size != len(nodes) {
+		t.Errorf("Size of list was %d but %d nodes were expected", l.Size, len(nodes))
+		return false
 	}
+
+	root := &l.root
+	if l.Size == 0 {
+		if l.root.next != nil && l.root.next != root || l.root.prev != nil && l.root.prev != root {
+			t.Errorf("0 length list must be zero values or circled back on itself")
+		}
+	}
+	return true
 }

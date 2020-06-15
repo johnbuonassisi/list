@@ -1,171 +1,144 @@
 package list
 
-import (
-	"errors"
-)
-
 // Node represents an item in a linked list
 type Node struct {
-	prev    *Node  // points to the previous Node in the list
-	next    *Node  // points to the next Node in the list
-	element string // is the data carried by the Node
-}
-
-// NewNode creates a new node
-func NewNode(prev *Node, next *Node, element string) Node {
-	return Node{prev: prev, next: next, element: element}
+	prev *Node       // points to the previous Node in the list
+	next *Node       // points to the next Node in the list
+	Data interface{} // is the data carried by the Node
+	list *List       // the list the node belongs to
 }
 
 // Prev returns a pointer to the previous Node
 func (n *Node) Prev() *Node {
-	return n.prev
+	if n.list != nil && n.prev != &n.list.root {
+		return n.prev
+	}
+	return nil
 }
 
-// Next returns a pointer to the next Node
+// Next returns a pointer to the next Node/
 func (n *Node) Next() *Node {
-	return n.next
-}
-
-// Element return the element of the Node, which is the main data carried by the Node
-func (n *Node) Element() string {
-	return n.element
+	// return nil when root element is hit
+	if n.list != nil && n.next != &n.list.root {
+		return n.next
+	}
+	return nil
 }
 
 // List implements a doubly linked list data structure
 type List struct {
-	head *Node
-	tail *Node
+	root Node
+	Size int
 }
 
 // New creates an empty list
-func New() List {
-	return List{head: nil, tail: nil}
+func New() *List {
+	// new returns a pointer to a List with all variables set to 0 value
+	return new(List).Init()
 }
 
-// NewWithElements creates a list containing the provided elements, in the order they are given
-func NewWithElements(elements ...string) List {
-	list := New()
-	for _, element := range elements {
-		list.Add(element)
+// Init the root node to point to itself, ensures size is 0
+func (l *List) Init() *List {
+	l.root.next = &l.root
+	l.root.prev = &l.root
+	l.Size = 0
+	return l
+}
+
+// lazyInit will initialize a list that has not already been initialized
+// this is used if a programmer allocates a list like
+// var l = new(List) or l := List{} and then immediately tries to use it
+// like l.Add("test"). lazyInit is called inside Add, which will call
+// Init() only if l.root.next == nil, which is only true if Init is never
+// called.
+func (l *List) lazyInit() {
+	if l.root.next == nil {
+		l.Init()
 	}
-	return list
 }
 
-// Head returns a pointer to the first Node in the list
+// Head returns a pointer to the first Node in the list, nil if empty
 func (l *List) Head() *Node {
-	return l.head
+	// when the size is 0 return nil because the next node of the root
+	// node is itself
+	if l.Size == 0 {
+		return nil
+	}
+	return l.root.next
 }
 
-// Tail returns a pointer to the last Node in the list
+// Tail returns a pointer to the last Node in the list, nil if empty
 func (l *List) Tail() *Node {
-	return l.tail
+	// when the size is 0 return nil because the next node of the root
+	// code is itself
+	if l.Size == 0 {
+		return nil
+	}
+	return l.root.prev
 }
 
-// Add an element to the end of the list
-func (l *List) Add(element string) {
-	// create node thats previous node is the tail node and next node is nothing
-	node := NewNode(l.tail, nil, element)
-	// if head node is nil then set the new node to the head
-	if l.head == nil {
-		l.head = &node
-	} else {
-		l.tail.next = &node
-	}
-	// make the new node the tail node
-	l.tail = &node
+// AddToBack a new node with data d into the front of the list
+func (l *List) AddToBack(d interface{}) *Node {
+	// lazyInit just in case
+	// this will guarantee that the next and prev nodes of root are not nil
+	l.lazyInit()
+
+	// insert the node to the end of the list
+	return l.insertData(d, l.root.prev)
 }
 
-// Insert an element before an element at position pos
-func (l *List) Insert(element string, pos int) error {
-
-	// get the nodes before and after pos
-	var prevNode *Node
-	var replacementNode *Node
-	var i int
-	for node := l.head; node != nil; node = node.Next() {
-		if i == pos-1 {
-			prevNode = node
-		}
-		if i == pos {
-			replacementNode = node
-			break
-		}
-		i++
-	}
-
-	// error if attempting to insert past the end of the list
-	if prevNode == nil && replacementNode == nil {
-		return errors.New("Unable to find insertion position")
-	}
-
-	// when inserting after the first node in the list, set
-	// the previous node to point to the new node, and set the
-	// new node to point back to the previous node
-	newNode := NewNode(nil, nil, element)
-	if prevNode != nil {
-		prevNode.next = &newNode
-		newNode.prev = prevNode
-	} else {
-		// the newNode is being added to the front of the list, update the head pointer
-		l.head = &newNode
-	}
-
-	// set the node after to point back to the new node, set the
-	// next node of the new node to the node after the insertion position
-	if replacementNode != nil {
-		newNode.next = replacementNode
-		replacementNode.prev = &newNode
-	} else {
-		// the newNode is being added to the end of the list, update the tail pointer
-		l.tail = &newNode
-	}
-
-	return nil
-
+// AddToFront inserts a new node with data d into the front of the list
+func (l *List) AddToFront(d interface{}) *Node {
+	l.lazyInit()
+	return l.insertData(d, &l.root)
 }
 
-// Delete an element at position pos
-func (l *List) Delete(pos int) error {
-	// Go to the node to be deleted
-	var deleteNode *Node
-	var i int
-	for node := l.head; node != nil; node = node.Next() {
-		if i == pos {
-			deleteNode = node
-			break
-		}
-		i++
-	}
-
-	if deleteNode == nil {
-		return errors.New("Can't delete node, no node at specified position")
-	}
-
-	// Update prev and next pointers to pass over the deleted node
-	if deleteNode.prev != nil {
-		deleteNode.prev.next = deleteNode.next
-	} else {
-		l.head = deleteNode.next
-	}
-
-	// Set tail node if tail was deleted
-	if deleteNode.next != nil {
-		deleteNode.next.prev = deleteNode.prev
-	} else {
-		l.tail = deleteNode.prev
-	}
-
-	return nil
+// AddBefore inserts a new node with data d before at
+func (l *List) AddBefore(d interface{}, at *Node) *Node {
+	l.lazyInit()
+	return l.insertData(d, at.prev)
 }
 
-// Size of the list
-func (l *List) Size() int {
-	// we could calculate the size after each node is added to the list
-	// but for simplicity lets just iterate the entire list each time this
-	// function is called
-	var size int
-	for node := l.head; node != nil; node = node.Next() {
-		size++
+// AddAfter inserts a new node with data d after at
+func (l *List) AddAfter(d interface{}, at *Node) *Node {
+	l.lazyInit()
+	return l.insertData(d, at)
+}
+
+// insertData is a helper function to wrap d in a node and insert
+// it into a list after at
+func (l *List) insertData(d interface{}, at *Node) *Node {
+	l.lazyInit()
+	return l.insert(&Node{Data: d}, at)
+}
+
+// insert node n after at, increments l.size, returns n
+// Generic function that should be used by any exported method that
+// add an node to the list
+func (l *List) insert(n, at *Node) *Node {
+	n.prev = at
+	n.next = at.next
+	n.prev.next = n
+	n.next.prev = n
+	n.list = l
+	l.Size++
+	return n
+}
+
+// Delete node n from the list and return its value
+func (l *List) Delete(n *Node) interface{} {
+	if n.list == l {
+		l.remove(n)
 	}
-	return size
+	return n.Data
+}
+
+// remove n from the list
+func (l *List) remove(n *Node) {
+	n.prev.next = n.next
+	n.next.prev = n.prev
+	n.next = nil
+	n.prev = nil
+	n.list = nil
+	l.Size--
 }
